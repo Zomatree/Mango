@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct Tabs: View {
+    @EnvironmentObject var settings: SettingValues
     @State var selection: String = "Library"
     
     var body: some View {
@@ -43,12 +44,13 @@ struct Tabs: View {
                     }
                     .tag("Settings")
             }
+            .background(settings.theme.background)
             .navigationTitle(selection)
         }
-        .environment(\.appLocale, decodeUserDefaults(forKey: "locale", defaultingTo: "en"))
     }
 }
 
 #Preview {
     Tabs()
+        .applyPreviewModifiers(settings: SettingValues())
 }

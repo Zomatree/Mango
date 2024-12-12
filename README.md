@@ -7,9 +7,7 @@ probably not
 
 ## Screenshots
 
-![alt text](.github/assets/IMG_0676.PNG)
-![alt text](.github/assets/IMG_0677.PNG)
-![alt text](.github/assets/IMG_0678.PNG)
+![alt text](.github/assets/previews.png)
 
 ## Installing
 

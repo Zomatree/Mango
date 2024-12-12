@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct Settings: View {
-    @State var imageQuality: ImageQuality = decodeUserDefaults(forKey: "imageQuality", defaultingTo: .full)
-    @State var ltr: Bool = decodeUserDefaults(forKey: "ltr", defaultingTo: false)
+    @EnvironmentObject var settings: SettingValues
     
     var body: some View {
         NavigationStack {
@@ -17,9 +16,15 @@ struct Settings: View {
                 NavigationLink("Sources") {
                     SourcesSettings()
                 }
+                .listRowBackground(settings.theme.secondaryBackground)
+                
+                NavigationLink("Theme") {
+                    ThemeSettings()
+                }
+                .listRowBackground(settings.theme.secondaryBackground)
                 
                 Section("Reader settings") {
-                    Picker("Image Quality", selection: $imageQuality) {
+                    Picker("Image Quality", selection: $settings.imageQuality) {
                         Text("Full")
                             .tag(ImageQuality.full)
                         Text("Compressed")
@@ -27,16 +32,13 @@ struct Settings: View {
                     }
                     .pickerStyle(.menu)
                     
-                    Toggle("Left to right", isOn: $ltr)
+                    Toggle("Left to right", isOn: $settings.ltr)
                 }
-                .onChange(of: imageQuality) { oldValue, newValue in
-                    try! writeUserDefaults(forKey: "imageQuality", with: newValue)
-                }
-                .onChange(of: ltr) { oldValue, newValue in
-                    try! writeUserDefaults(forKey: "ltr", with: newValue)
-                }
+                .listRowBackground(settings.theme.secondaryBackground)
             }
             .navigationTitle("Settings")
+            .scrollContentBackground(.hidden)
+            .background(settings.theme.background)
         }
     }
 }

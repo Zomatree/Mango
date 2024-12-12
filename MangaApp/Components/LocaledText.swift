@@ -14,7 +14,7 @@ func localizeString(locale: String, mapping: [String: String]) -> String {
 }
 
 struct LocalizedText: View {
-    @Environment(\.appLocale) var locale: String
+    @EnvironmentObject var settings: SettingValues
     
     var mapping: [String: String]
     
@@ -23,7 +23,7 @@ struct LocalizedText: View {
     }
     
     var body: some View {
-        let text = localizeString(locale: locale, mapping: mapping)
+        let text = localizeString(locale: settings.appLocale, mapping: mapping)
         Text((try? AttributedString(markdown: text, options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text, attributes: AttributeContainer()))
     }
 }

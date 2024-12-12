@@ -8,7 +8,22 @@
 import SwiftUI
 
 struct History: View {
+    @EnvironmentObject var settings: SettingValues
+    
     var body: some View {
-        Text("Todo")
+        HStack(alignment: .center) {
+            Spacer()
+            
+            VStack(alignment: .center) {
+                Spacer()
+                
+                Text("Todo")
+                
+                Spacer()
+            }
+            
+            Spacer()
+        }
+        .background(settings.theme.background)
     }
 }

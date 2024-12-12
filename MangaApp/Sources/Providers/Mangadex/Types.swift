@@ -9,7 +9,7 @@ import AnyCodable
 
 typealias MangadexLocalizedString = [String: String]
 
-struct MangadexRelationship: Codable {
+struct MangadexRelationship: Codable, Equatable {
     enum Related: String, Codable {
         case monochrome, main_story, adapted_from, based_on, prequel, side_story, doujinshi, same_franchise, shared_universe, sequel, spin_off, alternate_story, alternate_version, preserialization, colored, serialization
     }
@@ -90,8 +90,8 @@ struct MangadexPageinatedResponse<T: Decodable>: Decodable {
 
 typealias MangadexSearchResponse = MangadexPageinatedResponse<[MangadexManga]>
 
-struct MangadexChapter: Codable {
-    struct Attributes: Codable {
+struct MangadexChapter: Codable, Equatable {
+    struct Attributes: Codable, Equatable {
         var title: String?
         var volume: String?
         var chapter: String?

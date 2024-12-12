@@ -18,7 +18,7 @@ enum PageType: Equatable, Hashable {
 }
 
 struct MangaChapterReader: View {
-    @Environment(\.appLocale) var locale: String
+    @EnvironmentObject var settings: SettingValues
     
     var provider: any Provider
     var manga: Manga
@@ -29,10 +29,7 @@ struct MangaChapterReader: View {
     @State var error: String? = nil
     @StateObject var currentPage: Page = .withIndex(1)
     @State var hideOverlays: Bool = true
-    
-    var quality: ImageQuality
-    var ltr: Bool
-    
+        
     var chapter: Chapter { chapters[currentChapter] }
     
     init(provider: any Provider, manga: Manga, chapters: [Chapter], currentChapter: Int) {
@@ -40,14 +37,23 @@ struct MangaChapterReader: View {
         self.manga = manga
         self.chapters = chapters
         self.currentChapter = currentChapter
-        
-        self.quality = decodeUserDefaults(forKey: "imageQuality", defaultingTo: .full)
-        self.ltr = decodeUserDefaults(forKey: "ltr", defaultingTo: false)
     }
     
     func fetchImages() async {
         do {
-            urls = try await provider.getChapterImages(manga: manga.id, chapter: chapter.id, quality: quality)
+            let chapterUrls = try await provider.getChapterImages(manga: manga.id, chapter: chapter.id, quality: settings.imageQuality)
+            
+            switch settings.readStates.chapters[chapter.id] {
+                case .page(let page):
+                    currentPage.index = page
+                case .read:
+                    currentPage.index = chapterUrls.count
+                default:
+                    ()
+            }
+            
+            urls = chapterUrls
+            
         } catch let err {
             error = err.localizedDescription
         }
@@ -154,13 +160,20 @@ struct MangaChapterReader: View {
                             }
                         }
                     }
-                    .horizontal(ltr ? .endToStart : .startToEnd)
+                    .onPageChanged { index in
+                        if index == pages.count - 1 {
+                            settings.readStates.chapters[chapter.id] = .read
+                        } else if index != 0 {
+                            settings.readStates.chapters[chapter.id] = .page(index)
+                        }
+                    }
+                    .horizontal(settings.ltr ? .endToStart : .startToEnd)
                     .ignoresSafeArea(.all)
                     
                     if !hideOverlays {
                         VStack(spacing: 16) {
                             HStack(alignment: .center) {
-                                if ltr {
+                                if settings.ltr {
                                     Text("\(urls.count)")
                                         .frame(width: 32)
                                 } else {
@@ -179,13 +192,13 @@ struct MangaChapterReader: View {
                                         }
                                     },
                                     numberOfItems: urls.count > 20 ? urls.count / 2 : urls.count,
-                                    backgroundColor: .primary,
-                                    foregroundColor: .accentColor
+                                    backgroundColor: settings.theme.foreground.color,
+                                    foregroundColor: settings.theme.accent.color
                                 )
-                                .environment(\.layoutDirection, ltr ? .rightToLeft : .leftToRight)
+                                .environment(\.layoutDirection, settings.ltr ? .rightToLeft : .leftToRight)
                                 .flipsForRightToLeftLayoutDirection(true)
                                 
-                                if !ltr {
+                                if !settings.ltr {
                                     Text("\(urls.count)")
                                         .frame(width: 32)
                                 } else {
@@ -194,7 +207,7 @@ struct MangaChapterReader: View {
                                 }
                             }
                             .padding(12)
-                            .background(Capsule().fill(.gray.opacity(0.5)))
+                            .background(Capsule().fill(settings.theme.secondaryBackground.opacity(0.5)))
                             .padding(.horizontal, 32)
 
                             HStack {
@@ -245,7 +258,7 @@ struct MangaChapterReader: View {
                                 Spacer()
                             }
                             .padding(16)
-                            .background(.gray.opacity(0.5))
+                            .background(settings.theme.secondaryBackground.opacity(0.2))
                         }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .zIndex(2)
@@ -282,6 +295,7 @@ struct MangaChapterReader: View {
         })
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(hideOverlays)
-        .toolbarBackground(hideOverlays ? .clear : .gray, for: .navigationBar)
+        .toolbarBackground(hideOverlays ? .clear : settings.theme.secondaryBackground.color, for: .navigationBar)
+        .background(settings.theme.background)
     }
 }

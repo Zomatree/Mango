@@ -12,6 +12,8 @@ import Kingfisher
 import ExyteGrid
 
 struct SearchSource: View {
+    @EnvironmentObject var settings: SettingValues
+    
     var provider: any Provider
     
     init(provider: any Provider.Type) {
@@ -80,5 +82,6 @@ struct SearchSource: View {
             Task { await search(text: text) }
         })
         .task { await getPopular() }
+        .background(settings.theme.background)
     }
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Chapter: Identifiable {
+enum Chapter: Codable, Identifiable, Equatable {
     case mangadex(MangadexChapter)
     
     var id: String {

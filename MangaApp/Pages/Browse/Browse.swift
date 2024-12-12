@@ -9,27 +9,23 @@ import SwiftUI
 import Kingfisher
 
 struct Browse: View {
-    @State var enabledSources: [ProviderType]
-    
-    init() {
-        enabledSources = decodeUserDefaults(forKey: "enabledSources", defaultingTo: [])
-    }
+    @EnvironmentObject var settings: SettingValues
     
     var body: some View {
         NavigationStack {
-            if enabledSources.isEmpty {
+            if settings.enabledSources.isEmpty {
                 VStack {
                     Spacer()
                     
                     Text("No sources configured.")
                         .font(.headline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(settings.theme.secondaryForeground)
                     
                     Spacer()
                 }
             } else {
                 List {
-                    ForEach(enabledSources, id: \.self) { source in
+                    ForEach(settings.enabledSources, id: \.self) { source in
                         let provider = getProvider(sourceType: source)
                         
                         NavigationLink {
@@ -41,10 +37,13 @@ struct Browse: View {
                                 Text(provider.name)
                             }
                         }
+                        .listRowBackground(settings.theme.secondaryBackground)
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
         }
         .navigationTitle("Browse")
+        .background(settings.theme.background)
     }
 }

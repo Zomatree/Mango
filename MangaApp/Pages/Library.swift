@@ -9,24 +9,20 @@ import SwiftUI
 import ExyteGrid
 
 struct Library: View {
-    @State var library: [Manga]
-    
-    init() {
-        library = decodeUserDefaults(forKey: "library", defaultingTo: [])
-    }
+    @EnvironmentObject var settings: SettingValues
     
     var body: some View {
         Group {
-            if library.isEmpty {
+            if settings.library.mangas.isEmpty {
                 VStack(alignment: .center) {
                     Text("🙁")
                         .font(.title)
                     Text("Your library is empty")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(settings.theme.secondaryForeground)
                 }
             } else {
                 Grid(tracks: 3, spacing: 8) {
-                    ForEach(library) { manga in
+                    ForEach(settings.library.mangas) { manga in
                         NavigationLink {
                             MangaOverview(manga: manga)
                         } label: {
@@ -43,5 +39,6 @@ struct Library: View {
         }
         .navigationTitle("Library")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(settings.theme.background)
     }
 }

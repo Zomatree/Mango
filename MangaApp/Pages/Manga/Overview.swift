@@ -11,24 +11,10 @@ import Kingfisher
 import Flow
 
 struct MangaOverview: View {
-    @Environment(\.appLocale) var locale: String
+    @EnvironmentObject var settings: SettingValues
     
     var provider: any Provider
     var manga: Manga
-    
-    @State var inLibrary: Bool {
-        didSet {
-            var library: [Manga] = decodeUserDefaults(forKey: "library", defaultingTo: [])
-
-            if inLibrary {
-                library.append(manga)
-            } else {
-                library.removeAll { $0.id == manga.id }
-            }
-            
-            try! writeUserDefaults(forKey: "library", with: library)
-        }
-    }
     
     @State var chapters: [Chapter]? = nil
     @State var error: String? = nil
@@ -37,9 +23,6 @@ struct MangaOverview: View {
     init(provider: (any Provider)? = nil, manga: Manga) {
         self.provider = provider ?? getProvider(manga: manga).init()
         self.manga = manga
-        
-        let library: [Manga] = decodeUserDefaults(forKey: "library", defaultingTo: [])
-        inLibrary = library.contains(where: { $0.id == manga.id })
     }
     
     func getChapters() async {
@@ -108,14 +91,23 @@ struct MangaOverview: View {
                             }
                         }
                         
+                        let inLibrary = settings.library.mangas.contains(where: { $0.id == manga.id })
+                        
                         HStack {
                             Button(
                                 inLibrary ? "Remove from library" : "Add to library",
                                 systemImage: inLibrary ? "heart.fill" : "heart"
                             ) {
-                                inLibrary.toggle()
+                                if inLibrary {
+                                    settings.library.mangas.removeAll { m in
+                                        m.id == manga.id
+                                    }
+                                } else {
+                                    settings.library.mangas.append(manga)
+                                }
                             }
                         }
+                        .foregroundStyle(settings.theme.accent)
                         
                         LocalizedText(manga.description)
                             .font(.callout)
@@ -126,7 +118,7 @@ struct MangaOverview: View {
                             LocalizedText(tag.title)
                                 .font(.callout)
                                 .padding(8)
-                                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.primary))
+                                .background(RoundedRectangle(cornerRadius: 8).stroke(settings.theme.foreground))
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -139,6 +131,17 @@ struct MangaOverview: View {
                             
                             LazyVStack(spacing: 16) {
                                 ForEach(Array(chapters.enumerated()), id: \.element.id) { (i, chapter) in
+                                    let readStatus = settings.readStates.chapters[chapter.id]
+                                    
+                                    let foreground = {
+                                        switch readStatus {
+                                            case .read:
+                                                return settings.theme.secondaryForeground
+                                            default:
+                                                return settings.theme.foreground
+                                        }
+                                    }()
+                                    
                                     NavigationLink {
                                         MangaChapterReader(provider: provider, manga: manga, chapters: chapters, currentChapter: i)
                                     } label: {
@@ -146,7 +149,6 @@ struct MangaOverview: View {
                                             VStack(alignment: .leading) {
                                                 Text(chapter.fullTitle)
                                                     .lineLimit(1)
-                                                    .foregroundStyle(Color.primary)
                                                 
                                                 HStack(alignment: .center) {
                                                     Text(chapter.publishAt.formatted(date: .numeric, time: .omitted))
@@ -157,10 +159,18 @@ struct MangaOverview: View {
                                                         
                                                         Text(verbatim: uploader)
                                                     }
+                                                    
+                                                    if case .page(let page) = readStatus {
+                                                        Circle()
+                                                            .frame(width: 4, height: 4)
+                                                        
+                                                        Text("Page: \(page)")
+                                                            .foregroundStyle(settings.theme.secondaryForeground)
+                                                    }
                                                 }
                                                 .font(.caption)
-                                                .foregroundStyle(Color.secondary)
                                             }
+                                            .foregroundStyle(foreground)
                                             
                                             Spacer()
                                             
@@ -171,10 +181,11 @@ struct MangaOverview: View {
                                                     .resizable()
                                                     .scaledToFit()
                                                     .frame(width: 24, height: 24)
-                                                    .foregroundStyle(Color.secondary)
+                                                    .foregroundStyle(settings.theme.secondaryForeground)
                                             }
                                         }
                                     }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }
@@ -182,7 +193,7 @@ struct MangaOverview: View {
                         HStack(alignment: .center) {
                             Text(verbatim: error)
                                 .font(.title)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(settings.theme.secondaryForeground)
                         }
                     } else {
                         HStack(alignment: .center) {
@@ -203,7 +214,7 @@ struct MangaOverview: View {
                         Spacer()
                     }
                     .id("bottom")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(settings.theme.secondaryForeground)
                     .task(id: chapters?.count) {
                         await getChapters()
                     }
@@ -220,14 +231,27 @@ struct MangaOverview: View {
                 }
                 .foregroundStyle(.white)
                 .padding()
-                .background(Color.accentColor)
+                .background(settings.theme.accent)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(.trailing, 16)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .navigationTitle(localizeString(locale: locale, mapping: manga.title))
+        .navigationTitle(localizeString(locale: settings.appLocale, mapping: manga.title))
         .navigationBarTitleDisplayMode(.large)
-        .task { await getChapters() }
+        .refreshable {
+            Task { await getChapters() }
+        }
+        .onAppear {
+            if let cachedChapters = settings.library.chapters[manga.id] {
+                chapters = cachedChapters
+            } else {
+                Task { await getChapters() }
+            }
+        }
+        .onChange(of: chapters, { oldValue, newValue in
+            settings.library.chapters[manga.id] = newValue
+        })
+        .background(settings.theme.background)
     }
 }
