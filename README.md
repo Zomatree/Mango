@@ -1,4 +1,4 @@
-# Manga App
+# Mango Manga
 
 > Simple manga app with support for multiple sources inspired by tachiyomi
 
