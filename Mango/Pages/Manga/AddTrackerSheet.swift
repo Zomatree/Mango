@@ -39,6 +39,10 @@ struct AddTrackerSheet: View {
                         } label: {
                             HStack {
                                 Image(tracker.icon)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+
                                 Text(tracker.name)
                                 
                                 Spacer()
@@ -74,11 +78,13 @@ struct AddTrackerSheet: View {
                                 Spacer()
                             }
                         } else {
-                            ScrollView {
+                            VStack(spacing: 0) {
                                 TextField("Search", text: $search)
                                     .frame(maxWidth: .infinity)
-                                    .padding(8)
-                                    .background(RoundedRectangle(cornerRadius: 8).fill(settings.theme.secondaryBackground))
+                                    .padding()
+//                                    .padding(.horizontal, 8)
+//                                    .padding(.vertical, 12)
+                                    .background(settings.theme.secondaryBackground)
 
                                 List {
                                     ForEach(trackerResults) { trackerManga in
@@ -110,7 +116,9 @@ struct AddTrackerSheet: View {
                                     .listRowBackground(settings.theme.secondaryBackground)
                                 }
                                 .scrollContentBackground(.hidden)
+                                .listStyle(.plain)
                             }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
                     .task(id: search) {
@@ -128,5 +136,6 @@ struct AddTrackerSheet: View {
             Spacer()
         }
         .presentationBackground(settings.theme.background)
+        .ignoresSafeArea(.all, edges: .bottom)
     }
 }

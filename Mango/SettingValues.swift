@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Collections
 
 func decodeUserDefaults<T: Decodable>(forKey key: String, withDecoder decoder: JSONDecoder = JSONDecoder()) throws -> T? {
     if let value = UserDefaults.standard.data(forKey: key) {
@@ -35,7 +36,7 @@ struct ReadStates: Codable {
 }
 
 struct MangaLibrary: Codable {
-    var mangas: [Manga] = []
+    var mangas: OrderedDictionary<String, Manga> = [:]
     var chapters: [String: [Chapter]] = [:]
 }
 
@@ -128,20 +129,31 @@ public struct ThemeColor: Equatable, ShapeStyle, View, Codable {
 struct Theme: Codable, Equatable {
     var accent: ThemeColor = ThemeColor(hex: "E95678")
     
-    var foreground: ThemeColor = ThemeColor(hex: "D5D8DA")
-    var secondaryForeground: ThemeColor = ThemeColor(hex: "6C6F93")
+//    var foreground: ThemeColor = ThemeColor(hex: "D5D8DA")
+//    var secondaryForeground: ThemeColor = ThemeColor(hex: "6C6F93")
+//    
+//    var background: ThemeColor = ThemeColor(hex: "111114")
+//    var secondaryBackground: ThemeColor = ThemeColor(hex: "313037")
     
-    var background: ThemeColor = ThemeColor(hex: "111114")
-    var secondaryBackground: ThemeColor = ThemeColor(hex: "313037")
+//    var accent: ThemeColor = ThemeColor(hex: "#a9878b")
+    
+    var foreground: ThemeColor = ThemeColor(hex: "#d4d4d9")
+    var secondaryForeground: ThemeColor = ThemeColor(hex: "#6b6b70")
+    
+    var background: ThemeColor = ThemeColor(hex: "#1a1a1e")
+    var secondaryBackground: ThemeColor = ThemeColor(hex: "#3e3e41")
 }
 
 struct Trackers: Codable {
     var anilist: AnilistTrackerAuth?
+    var myanimelist: MyAnimeListTrackerAuth?
     
     func isAuthorized(trackerType ty: TrackerType) -> Bool {
         switch ty {
             case .anilist:
                 return anilist != nil
+            case .myanimelist:
+                return myanimelist != nil
         }
     }
     
@@ -149,6 +161,17 @@ struct Trackers: Codable {
         switch ty {
             case .anilist:
                 anilist = nil
+            case .myanimelist:
+                myanimelist = nil
+        }
+    }
+    
+    mutating func authorizeTracker(trackerType ty: TrackerType, auth: Any) {
+        switch ty {
+            case .anilist:
+                anilist = auth as? AnilistTrackerAuth
+            case .myanimelist:
+                myanimelist = auth as? MyAnimeListTrackerAuth
         }
     }
     
@@ -157,6 +180,10 @@ struct Trackers: Codable {
             case .anilist:
                 if let anilist {
                     return AnilistTracker(auth: anilist)
+                }
+            case .myanimelist:
+                if let myanimelist {
+                    return MyAnimeListTracker(auth: myanimelist)
                 }
         }
         
@@ -169,6 +196,8 @@ struct Trackers: Codable {
                 switch ty {
                     case .anilist:
                         return AnilistTracker.self
+                    case .myanimelist:
+                        return MyAnimeListTracker.self
                 }
             } else {
                 return nil
@@ -189,6 +218,10 @@ struct TrackedManga: Codable, Equatable {
     var tracker: TrackerType
     var manga: Manga
     var trackedValues: Values
+}
+
+enum MangaLayout: Codable {
+    case grid, list
 }
 
 class SettingValues: ObservableObject {
@@ -237,6 +270,21 @@ class SettingValues: ObservableObject {
             try! writeUserDefaults(forKey: "trackedMangas", with: trackedMangas)
         }
     }
+    @Published var showPageNumbers: Bool {
+        didSet {
+            try! writeUserDefaults(forKey: "showPageNumbers", with: showPageNumbers)
+        }
+    }
+    @Published var pageNumbersOpacity: Double {
+        didSet {
+            try! writeUserDefaults(forKey: "pageNumbersOpacity", with: pageNumbersOpacity)
+        }
+    }
+    @Published var mangaLayout: MangaLayout {
+        didSet {
+            try! writeUserDefaults(forKey: "mangaLayout", with: mangaLayout)
+        }
+    }
     
     init() {
         appLocale = decodeUserDefaults(forKey: "appLocale", defaultingTo: "en")
@@ -244,9 +292,14 @@ class SettingValues: ObservableObject {
         ltr = decodeUserDefaults(forKey: "ltr", defaultingTo: false)
         readStates = decodeUserDefaults(forKey: "readStates", defaultingTo: ReadStates())
         library = decodeUserDefaults(forKey: "library", defaultingTo: MangaLibrary())
-        theme = Theme()//decodeUserDefaults(forKey: "theme", defaultingTo: Theme())
+//        theme = decodeUserDefaults(forKey: "theme", defaultingTo: Theme())
+        theme = Theme()
         enabledSources = decodeUserDefaults(forKey: "enabledSources", defaultingTo: [])
         linkedTrackers = decodeUserDefaults(forKey: "linkedTrackers", defaultingTo: Trackers())
         trackedMangas = decodeUserDefaults(forKey: "trackedMangas", defaultingTo: [:])
+        showPageNumbers = decodeUserDefaults(forKey: "showPageNumbers", defaultingTo: true)
+        pageNumbersOpacity = decodeUserDefaults(forKey: "pageNumbersOpacity", defaultingTo: 0.5)
+        mangaLayout = decodeUserDefaults(forKey: "mangaLayout", defaultingTo: .grid)
+
     }
 }

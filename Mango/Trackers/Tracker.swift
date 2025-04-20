@@ -9,13 +9,15 @@ import Foundation
 
 protocol Tracker {
     static var trackerType: TrackerType { get }
-    static var auth_url: URL { get }
+    // static var auth_url: URL { get }
     static var name: String { get }
     static var icon: String { get }
     static var publicUrl: String { get }
 
     init(trackers: Trackers)
     
+    static func formatAuthUrl() -> (url: URL, challenge: String?)
+    static func getAccessTokenFromUrl(url: URL, challenge_code: String?) async throws -> Any?
     func getLinkedUser() async throws -> TrackedUser
     func search(name: String) async throws -> [Manga]
     func getManga(id: String) async throws -> Manga
@@ -23,12 +25,11 @@ protocol Tracker {
     func updateTrackedValues(id: String, trackedValues: TrackedManga.Values) async throws -> TrackedManga.Values
     func unlink() async throws
     static func formatMangaUrl(id: String) -> URL
-    
 }
 
 extension Tracker {
     var trackerType: TrackerType { Self.trackerType }
-    var auth_url: URL { Self.auth_url }
+    // var auth_url: URL { Self.auth_url }
     var name: String { Self.name }
     var icon: String { Self.icon }
     var publicUrl: String { Self.publicUrl }
@@ -37,15 +38,17 @@ extension Tracker {
 }
 
 enum TrackerType: String, Codable {
-    case anilist
+    case anilist, myanimelist
     
-    static var allTrackers: [Self] = [.anilist]
+    static var allTrackers: [Self] = [.anilist, .myanimelist]
 }
 
 func getTracker(trackerType ty: TrackerType) -> any Tracker.Type {
     switch ty {
         case .anilist:
             return AnilistTracker.self
+        case .myanimelist:
+            return MyAnimeListTracker.self
     }
 }
 

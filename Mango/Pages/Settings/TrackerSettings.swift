@@ -14,6 +14,7 @@ struct TrackerSettings: View {
     @Environment(\.openURL) private var openURL
     
     @State var trackerInfoSheet: (any Tracker)? = nil
+    @State var currentChallange: String? = nil
     
     var body: some View {
         List {
@@ -24,7 +25,9 @@ struct TrackerSettings: View {
                     if let tracker = settings.linkedTrackers.createTracker(trackerType: trackerType) {
                         trackerInfoSheet = tracker
                     } else {
-                        openURL(tracker.auth_url)
+                        let response = tracker.formatAuthUrl()
+                        currentChallange = response.challenge
+                        openURL(response.url)
                     }
                 } label: {
                     HStack {
@@ -44,9 +47,13 @@ struct TrackerSettings: View {
                                 .scaledToFit()
                                 .frame(width: 16, height: 16)
                         }
-                        
-                        
                     }
+                }
+                .swipeActions {
+                    Button("Delete", systemImage: "trash") {
+                        settings.linkedTrackers.unlink(trackerType: trackerType)
+                    }
+                    .background(.red)
                 }
             }
         }
@@ -57,24 +64,19 @@ struct TrackerSettings: View {
         .background(settings.theme.background)
         .navigationTitle("Trackers")
         .onOpenURL { url in
-            print(url)
-            
-            if url.scheme == "mangomanga", url.pathComponents[safe: 2] == "auth", let trackerType = TrackerType(rawValue: url.pathComponents[1]) {
-                switch trackerType {
-                    case .anilist:
-                        var frags: [String.SubSequence: String.SubSequence] = [:]
+            Task {
+                do {
+                    if url.scheme == "mangomanga", url.pathComponents[safe: 2] == "auth", let trackerType = TrackerType(rawValue: url.pathComponents[1]) {
+                        let tracker = getTracker(trackerType: trackerType)
                         
-                        for part in url.fragment()!.split(separator: "&") {
-                            let kv = part.split(separator: "=", maxSplits: 2)
-                            frags[kv[0]] = kv[1]
+                        if let authInfo = try await tracker.getAccessTokenFromUrl(url: url, challenge_code: currentChallange) {
+                            settings.linkedTrackers.authorizeTracker(trackerType: trackerType, auth: authInfo)
+                        } else {
+                            print("Failed to link")
                         }
-                        
-                        if let access_token = frags["access_token"], let expires_in = frags["expires_in"] {
-                            let expires_at = Date.now.addingTimeInterval(Double(expires_in)!)
-                            let decoder = JWTDecoder(jwtVerifier: .none)
-                            let jwt = try! decoder.decode(JWT<AnilistJWTClaims>.self, fromString: String(access_token))
-                            settings.linkedTrackers.anilist = AnilistTrackerAuth(token: String(access_token), userId: Int(jwt.claims.sub)!, expires_at: expires_at)
-                        }
+                    }
+                } catch {
+                    print(error.localizedDescription)
                 }
             }
         }
@@ -90,14 +92,14 @@ struct TrackerUserInfoSheet: View {
     @State var unlink: Bool = false
     
     var body: some View {
-        HStack {
+        HStack(alignment: .top) {
             if let error {
                 Text(error)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
             } else if let user {
-                VStack {
-                    HStack {
+                VStack() {
+                    HStack(alignment: .top) {
                         if let avatar = user.avatar {
                             KFImage(URL(string: avatar)!)
                                 .resizable()
@@ -129,6 +131,8 @@ struct TrackerUserInfoSheet: View {
                     if let description = user.description {
                         Text(verbatim: description)
                     }
+                    
+                    Spacer()
                 }
             } else {
                 Spacer()

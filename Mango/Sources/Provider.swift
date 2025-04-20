@@ -64,7 +64,7 @@ func getProvider(manga: Manga) -> any Provider.Type {
     switch manga {
         case .mangadex:
             return MangadexProvider.self
-        case .anilist:
+        case .anilist, .myanimelist:
             fatalError("manga came from tracker not provider")
     }
 }

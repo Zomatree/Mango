@@ -13,19 +13,19 @@ struct SourcesSettings: View {
     var body: some View {
         List {
             ForEach(ProviderType.allProviders, id: \.self) { providerType in
-                HStack {
-                    Toggle(isOn: Binding(
-                        get: { settings.enabledSources.contains(providerType) },
-                        set: {
-                            if $0 {
-                                settings.enabledSources.insert(providerType)
-                            } else {
-                                settings.enabledSources.remove(providerType)
-                            }
-                        })
-                    ) {
-                        let provider = getProvider(sourceType: providerType)
-                        
+                Toggle(isOn: Binding(
+                    get: { settings.enabledSources.contains(providerType) },
+                    set: {
+                        if $0 {
+                            settings.enabledSources.insert(providerType)
+                        } else {
+                            settings.enabledSources.remove(providerType)
+                        }
+                    })
+                ) {
+                    let provider = getProvider(sourceType: providerType)
+                     
+                    HStack {
                         Image(provider.icon)
                             .resizable()
                             .scaledToFit()
@@ -35,7 +35,10 @@ struct SourcesSettings: View {
                     }
                 }
             }
+            .listRowBackground(settings.theme.secondaryBackground)
         }
+        .scrollContentBackground(.hidden)
         .navigationTitle("Sources")
+        .background(settings.theme.background)
     }
 }

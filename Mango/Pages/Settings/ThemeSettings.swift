@@ -41,6 +41,17 @@ struct ThemeSettings: View {
             .listRowBackground(settings.theme.secondaryBackground)
             .animation(.easeInOut, value: settings.theme)
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Reset") {
+                    withAnimation {
+                        settings.theme = Theme()
+                    }
+                }
+                .foregroundStyle(settings.theme.accent)
+            }
+        }
+        .navigationTitle("Theme")
         .scrollContentBackground(.hidden)
         .background(settings.theme.background)
         .animation(.easeInOut, value: settings.theme)

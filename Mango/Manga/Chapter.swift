@@ -41,7 +41,7 @@ enum Chapter: Codable, Identifiable, Equatable {
     var uploader: String? {
         switch self {
             case .mangadex(let chapter):
-                return chapter.attributes.uploader
+                chapter.relationships.first(where: { $0.type == "scanlation_group" })?.attributes?["name"]?.value as? String
         }
     }
     

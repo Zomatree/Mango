@@ -16,6 +16,8 @@
 		17250C602D0A099B002EAA48 /* SwiftUIPager in Frameworks */ = {isa = PBXBuildFile; productRef = 17250C5F2D0A099B002EAA48 /* SwiftUIPager */; };
 		17250C632D0A1036002EAA48 /* Zoomable in Frameworks */ = {isa = PBXBuildFile; productRef = 17250C622D0A1036002EAA48 /* Zoomable */; };
 		17250C662D0A28AC002EAA48 /* ProgressIndicatorView in Frameworks */ = {isa = PBXBuildFile; productRef = 17250C652D0A28AC002EAA48 /* ProgressIndicatorView */; };
+		175379962D28A62900FEAB61 /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = 175379952D28A62900FEAB61 /* Collections */; };
+		175379992D28ABDB00FEAB61 /* SwiftUIImageViewer in Frameworks */ = {isa = PBXBuildFile; productRef = 175379982D28ABDB00FEAB61 /* SwiftUIImageViewer */; };
 		178538CF2CF7ACE700CDF20C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 178538CE2CF7ACE700CDF20C /* Alamofire */; };
 		178538EB2CF7CDA400CDF20C /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 178538EA2CF7CDA400CDF20C /* Kingfisher */; };
 		178538EE2CF7CFC500CDF20C /* AnyCodable in Frameworks */ = {isa = PBXBuildFile; productRef = 178538ED2CF7CFC500CDF20C /* AnyCodable */; };
@@ -59,11 +61,13 @@
 				1707C40A2D19F1F600E9C0EB /* SwiftGraphQL in Frameworks */,
 				1707C40C2D19F1F600E9C0EB /* SwiftGraphQLClient in Frameworks */,
 				17250C662D0A28AC002EAA48 /* ProgressIndicatorView in Frameworks */,
+				175379992D28ABDB00FEAB61 /* SwiftUIImageViewer in Frameworks */,
 				17250C602D0A099B002EAA48 /* SwiftUIPager in Frameworks */,
 				1707C3D82D19C99300E9C0EB /* Apollo in Frameworks */,
 				178538EB2CF7CDA400CDF20C /* Kingfisher in Frameworks */,
 				17B063632D1B8A170058E1D2 /* SwiftJWT in Frameworks */,
 				1707C4042D19F1F600E9C0EB /* GraphQL in Frameworks */,
+				175379962D28A62900FEAB61 /* Collections in Frameworks */,
 				1707C4062D19F1F600E9C0EB /* GraphQLAST in Frameworks */,
 				178538CF2CF7ACE700CDF20C /* Alamofire in Frameworks */,
 				178538F12CF7D8F600CDF20C /* ExyteGrid in Frameworks */,
@@ -126,6 +130,8 @@
 				1707C4092D19F1F600E9C0EB /* SwiftGraphQL */,
 				1707C40B2D19F1F600E9C0EB /* SwiftGraphQLClient */,
 				17B063622D1B8A170058E1D2 /* SwiftJWT */,
+				175379952D28A62900FEAB61 /* Collections */,
+				175379982D28ABDB00FEAB61 /* SwiftUIImageViewer */,
 			);
 			productName = Mango;
 			productReference = 17FC8D952CEB91C1006A2576 /* Mango.app */;
@@ -170,6 +176,8 @@
 				1707C3D62D19C99300E9C0EB /* XCRemoteSwiftPackageReference "apollo-ios" */,
 				1707C4022D19F1F600E9C0EB /* XCRemoteSwiftPackageReference "swift-graphql" */,
 				17B063612D1B8A170058E1D2 /* XCRemoteSwiftPackageReference "Swift-JWT" */,
+				175379942D28A62900FEAB61 /* XCRemoteSwiftPackageReference "swift-collections" */,
+				175379972D28ABDB00FEAB61 /* XCRemoteSwiftPackageReference "swiftui-image-viewer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 17FC8D962CEB91C1006A2576 /* Products */;
@@ -453,6 +461,22 @@
 				minimumVersion = 1.0.0;
 			};
 		};
+		175379942D28A62900FEAB61 /* XCRemoteSwiftPackageReference "swift-collections" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-collections.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.4;
+			};
+		};
+		175379972D28ABDB00FEAB61 /* XCRemoteSwiftPackageReference "swiftui-image-viewer" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/fuzzzlove/swiftui-image-viewer.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 		178538CD2CF7ACE700CDF20C /* XCRemoteSwiftPackageReference "Alamofire" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Alamofire/Alamofire";
@@ -548,6 +572,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 17250C642D0A28AC002EAA48 /* XCRemoteSwiftPackageReference "ProgressIndicatorView" */;
 			productName = ProgressIndicatorView;
+		};
+		175379952D28A62900FEAB61 /* Collections */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 175379942D28A62900FEAB61 /* XCRemoteSwiftPackageReference "swift-collections" */;
+			productName = Collections;
+		};
+		175379982D28ABDB00FEAB61 /* SwiftUIImageViewer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 175379972D28ABDB00FEAB61 /* XCRemoteSwiftPackageReference "swiftui-image-viewer" */;
+			productName = SwiftUIImageViewer;
 		};
 		178538CE2CF7ACE700CDF20C /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;

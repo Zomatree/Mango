@@ -42,6 +42,17 @@ struct Settings: View {
                     Toggle("Left to right", isOn: $settings.ltr)
                 }
                 .listRowBackground(settings.theme.secondaryBackground)
+                
+                Section("Layout") {
+                    Picker("Manga layout", selection: $settings.mangaLayout) {
+                        Text("Grid")
+                            .tag(MangaLayout.grid)
+                        Text("List")
+                            .tag(MangaLayout.list)
+                    }
+                    .pickerStyle(.menu)
+                }
+                .listRowBackground(settings.theme.secondaryBackground)
             }
             .navigationTitle("Settings")
             .scrollContentBackground(.hidden)

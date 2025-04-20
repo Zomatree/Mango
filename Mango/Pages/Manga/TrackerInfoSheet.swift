@@ -39,6 +39,7 @@ struct TrackerInfoSheet: View {
                 }
                 
                 LocalizedText(tracked.manga.title)
+                    .lineLimit(1)
                 
                 Spacer()
                 
@@ -256,8 +257,9 @@ struct TrackerInfoSheet: View {
         .presentationBackground(settings.theme.background)
         .confirmationDialog("Remove tracking", isPresented: $confirmDelete) {
             Button("Remove tracking?", role: .destructive) {
-                settings.trackedMangas.removeValue(forKey: manga.id)
                 dismiss()
+                dismiss()
+                settings.trackedMangas.removeValue(forKey: manga.id)
             }
         }
         .task {

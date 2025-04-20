@@ -30,8 +30,8 @@ enum SearchToken: Identifiable, Hashable {
                         value = "Ongoing"
                     case .cancelled:
                         value = "Cancelled"
-                    case .haitus:
-                        value = "Haitus"
+                    case .hiatus:
+                        value = "Hiatus"
                     case .unreleased:
                         value = "Unreleased"
                 }
@@ -63,7 +63,6 @@ struct SearchSource: View {
     
     func runQuery(query: QueryFilterOptions, replace: Bool) async {
         do {
-            print(query)
             let newResults = try await provider.search(filter: query)
 
             if newResults.count != query.limit {
@@ -104,28 +103,11 @@ struct SearchSource: View {
                             .foregroundStyle(settings.theme.secondaryForeground)
                     }
                 } else {
-                    ScrollView {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                            ForEach(results) { manga in
-                                NavigationLink {
-                                    MangaOverview(provider: provider, manga: manga)
-                                } label: {
-                                    MangaCover(manga: manga)
-                                }
-                                .onAppear {
-                                    if manga == results.last {
-                                        currentQueryFilter.offset = results.count
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 8)
-                        
-                        if !foundAll {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .frame(maxWidth: .infinity)
-                        }
+                    switch settings.mangaLayout {
+                        case .grid:
+                            SearchSourceGrid(provider: provider, results: results, currentQueryFilter: $currentQueryFilter, foundAll: $foundAll)
+                        case .list:
+                            SearchSourceList(provider: provider, results: results, currentQueryFilter: $currentQueryFilter, foundAll: $foundAll)
                     }
                 }
             } else {
@@ -162,6 +144,10 @@ struct SearchSource: View {
                         currentQueryFilter.status = statuses
                 }
             }
+            
+            Task {
+                await runQuery(query: currentQueryFilter, replace: true)
+            }
         })
         .onChange(of: currentQueryFilter) { oldValue, newValue in
             Task {
@@ -170,5 +156,83 @@ struct SearchSource: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(settings.theme.background)
+    }
+}
+
+struct SearchSourceGrid: View {
+    var provider: any Provider
+    var results: [Manga]
+    
+    @Binding var currentQueryFilter: QueryFilterOptions
+    @Binding var foundAll: Bool
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(results) { manga in
+                    SearchSourceEntry(provider: provider, manga: manga, results: results, currentQueryFilter: $currentQueryFilter)
+                }
+            }
+            .padding(.horizontal, 8)
+            
+            if !foundAll {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+}
+    
+struct SearchSourceList: View {
+    var provider: any Provider
+    var results: [Manga]
+    
+    @Binding var currentQueryFilter: QueryFilterOptions
+    @Binding var foundAll: Bool
+    
+    var body: some View {
+        List {
+            let _ = print(foundAll)
+            ForEach(results) { manga in
+                SearchSourceEntry(provider: provider, manga: manga, results: results, currentQueryFilter: $currentQueryFilter)
+            }
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            
+            if !foundAll {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .frame(maxWidth: .infinity)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+    }
+}
+
+struct SearchSourceEntry: View {
+    var provider: any Provider
+
+    var manga: Manga
+    
+    var results: [Manga]
+    
+    @Binding var currentQueryFilter: QueryFilterOptions
+
+    var body: some View {
+        NavigationLink {
+            MangaOverview(provider: provider, manga: manga)
+        } label: {
+            AwareMangaCover(manga: manga)
+        }
+        .onAppear {
+            if manga == results.last {
+                currentQueryFilter.offset = results.count
+            }
+        }
+
     }
 }

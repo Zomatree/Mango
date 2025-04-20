@@ -9,7 +9,8 @@ import Foundation
 import SwiftGraphQLClient
 import SwiftGraphQL
 import GraphQL
-import  SwiftJWT
+import SwiftJWT
+import Combine
 
 var ANILIST_APP_ID: Int = 23111
 
@@ -33,23 +34,39 @@ struct AnilistMedia: Codable, Equatable, Hashable {
     var status: Enums.MediaStatus?
     var chapters: Int?
     var format: Enums.MediaFormat?
+    var artist: String?
+    var author: String?
 }
 
 struct AnilistJWTClaims: Claims {
     var sub: String
 }
 
+struct FailedError: Error {
+    var reason: String
+}
+
 struct AnilistTracker: Tracker {
     static var trackerType: TrackerType = .anilist
-    static var auth_url: URL {
-        URL(string: "https://anilist.co/api/v2/oauth/authorize?client_id=\(ANILIST_APP_ID)&response_type=token")!
-    }
     static var name: String = "AniList"
     static var icon: String = "AniListIcon"
     static var publicUrl: String = "https://anilist.co"
     
     static let mediaSelection = Selection.Media<AnilistMedia> {
-        AnilistMedia(
+        let staff = try $0.staff(selection: Selection.StaffConnection<[(role: String?, name: String?)]> {
+            try $0.edges(selection: Selection.StaffEdge<(role: String?, name: String?)> {
+                let role = try $0.role()
+                let name = try $0.node(selection: Selection.Staff<String?> {
+                    try $0.name(selection: Selection.StaffName<String?> {
+                        try $0.full()
+                    }.optional())
+                }.optional())
+                
+                return (role: role, name: name)
+            }.nonNullOrFail.list.nonNullOrFail)
+        }.nonNullOrFail)
+        
+        return AnilistMedia(
             id: try $0.id(),
             title: try $0.title(
                 selection: Selection.MediaTitle<AnilistMedia.Title?> {
@@ -63,7 +80,9 @@ struct AnilistTracker: Tracker {
             coverImage: try $0.coverImage(selection: Selection.MediaCoverImage<String?> { try $0.medium() }.optional()),
             status: try $0.status(),
             chapters: try $0.chapters(),
-            format: try $0.format()
+            format: try $0.format(),
+            artist: staff.first { $0.role == "Art" }?.name,
+            author: staff.first { $0.role == "Story" }?.name
         )
     }
     
@@ -103,9 +122,15 @@ struct AnilistTracker: Tracker {
     
     init(auth: AnilistTrackerAuth) {
         self.auth = auth
-        self.client = SwiftGraphQLClient.Client(request: URLRequest(url: URL(string: "https://graphql.anilist.co")!), exchanges: [AuthExchange(header: "Authorization", getToken: {
-            "Bearer \(auth.token)"
-        }), DebugExchange(debug: true), ErrorExchange(onError: { print($0, $1) })])
+        self.client = SwiftGraphQLClient.Client(
+            request: URLRequest(url: URL(string: "https://graphql.anilist.co")!),
+            exchanges: [
+                AuthExchange(header: "Authorization", getToken: { "Bearer \(auth.token)" }),
+                DebugExchange(debug: true),
+                ErrorExchange(onError: { print($0, $1) }),
+                FetchExchange()
+            ]
+        )
     }
     
     init(trackers: Trackers) {
@@ -113,12 +138,37 @@ struct AnilistTracker: Tracker {
         self.auth = auth
         self.client = SwiftGraphQLClient.Client(request: URLRequest(url: URL(string: "https://graphql.anilist.co")!), exchanges: [AuthExchange(header: "Authorization", getToken: {
             "Bearer \(auth.token)"
-        })])
+        }), DebugExchange(debug: true), ErrorExchange(onError: { print($0, $1) }), FetchExchange()])
+    }
+    
+    static func getAccessTokenFromUrl(url: URL, challenge_code: String?) async throws -> Any? {
+        var frags: [String.SubSequence: String.SubSequence] = [:]
+        
+        for part in url.fragment()!.split(separator: "&") {
+            let kv = part.split(separator: "=", maxSplits: 2)
+            frags[kv[0]] = kv[1]
+        }
+        
+        if let access_token = frags["access_token"], let expires_in = frags["expires_in"] {
+            let expires_at = Date.now.addingTimeInterval(Double(expires_in)!)
+            let decoder = JWTDecoder(jwtVerifier: .none)
+            let jwt = try! decoder.decode(JWT<AnilistJWTClaims>.self, fromString: String(access_token))
+            return AnilistTrackerAuth(token: String(access_token), userId: Int(jwt.claims.sub)!, expires_at: expires_at)
+        }
+        
+        return nil
+    }
+    
+    static func formatAuthUrl() -> (url: URL, challenge: String?) {
+        return (
+            url: URL(string: "https://anilist.co/api/v2/oauth/authorize?client_id=\(ANILIST_APP_ID)&response_type=token")!,
+            challenge: nil
+        )
     }
     
     func getLinkedUser() async throws -> TrackedUser {
         let query = Selection.Query<TrackedUser?> {
-            try $0.viewer(selection: Selection.User<TrackedUser?> {
+            return try $0.viewer(selection: Selection.User<TrackedUser?> {
                 TrackedUser(
                     username: try $0.name(),
                     description: try $0.about(asHtml: false),
@@ -128,8 +178,23 @@ struct AnilistTracker: Tracker {
             }.optional())
         }
         
-        let resp = try! await client.query(query)
-        return resp.data!
+        return try await withCheckedThrowingContinuation { continuation in
+            var cancellable: AnyCancellable?
+            
+            cancellable = client.query(query)
+                .sink { result in
+                    print(result)
+                    switch result {
+                        case .finished:
+                            continuation.resume(throwing: FailedError(reason: "idk why"))
+                        case let .failure(error):
+                            continuation.resume(throwing: error)
+                    }
+                    cancellable?.cancel()
+                } receiveValue: { value in
+                    continuation.resume(with: .success(value.data!))
+                }
+        }
     }
     
     func search(name: String) async throws -> [Manga] {

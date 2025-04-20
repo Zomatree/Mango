@@ -8,7 +8,7 @@
 import Foundation
 
 enum Status: String, Hashable, Identifiable {
-    case completed, ongoing, cancelled, haitus, unreleased
+    case completed, ongoing, cancelled, hiatus, unreleased
     
     var id: Self { self }
 }
@@ -16,6 +16,7 @@ enum Status: String, Hashable, Identifiable {
 enum Manga: Hashable, Codable {
     case mangadex(MangadexManga)
     case anilist(AnilistMedia)
+    case myanimelist(MyAnimeListManga)
 }
 
 
@@ -40,6 +41,8 @@ extension Manga {
                 }
                 
                 return titles
+            case .myanimelist(let manga):
+                return ["jp": manga.title]
         }
     }
     
@@ -54,6 +57,8 @@ extension Manga {
                 
             case .anilist(let manga):
                 return manga.coverImage
+            case .myanimelist(let manga):
+                return manga.main_picture.medium
         }
     }
     
@@ -64,6 +69,8 @@ extension Manga {
             
             case .anilist(let manga):
                 return ["en": manga.description ?? "No description"]
+            case .myanimelist(let manga):
+                return ["en": manga.synopsis ?? "No description"]
         }
     }
     
@@ -79,12 +86,21 @@ extension Manga {
                     case .finished:
                         return .completed
                     case .hiatus:
-                        return .haitus
+                        return .hiatus
                     case .notYetReleased:
                         return .unreleased
                     case .releasing:
                         return .ongoing
                     case .none:
+                        return .unreleased
+                }
+            case .myanimelist(let manga):
+                switch manga.status {
+                    case .finished:
+                        return .completed
+                    case .currently_publishing:
+                        return .ongoing
+                    case .not_yet_published:
                         return .unreleased
                 }
         }
@@ -96,15 +112,19 @@ extension Manga {
                 return manga.attributes.tags.map(Tag.mangadex)
             case .anilist:
                 return []
+            case .myanimelist(let manga):
+                return manga.genres.map(Tag.myanimelist)
         }
     }
     
     var chapters: Int {
         switch self {
-            case .mangadex(let manga):
+            case .mangadex:
                 return 0
             case .anilist(let manga):
                 return manga.chapters ?? 0
+            case .myanimelist(let manga):
+                return manga.num_chapters
         }
     }
     
@@ -114,6 +134,34 @@ extension Manga {
                 URL(string: "https://mangadex.org/title/\(manga.id)")!
             case .anilist(let manga):
                 URL(string: "https://anilist.co/anime/\(manga.id)")!
+            case .myanimelist(let manga):
+                URL(string: "https://myanimelist.net/manga/\(manga.id)")!
+        }
+    }
+    
+    var author: String? {
+        switch self {
+            case .mangadex(let manga):
+                return manga.relationships.first(where: { $0.type == "author" })?.attributes?["name"]?.value as? String
+            case .anilist(let manga):
+                return manga.author
+            case .myanimelist(let manga):
+                guard let author = manga.authors.first(where: { $0.role == "Story" }) else { return nil }
+                
+                return "\(author.node.first_name) \(author.node.last_name)"
+        }
+    }
+    
+    var artist: String? {
+        switch self {
+            case .mangadex(let manga):
+                return manga.relationships.first(where: { $0.type == "artist" })?.attributes?["name"]?.value as? String
+            case .anilist(let manga):
+                return manga.author
+            case .myanimelist(let manga):
+                guard let author = manga.authors.first(where: { $0.role == "Art" }) else { return nil }
+                
+                return "\(author.node.first_name) \(author.node.last_name)"
         }
     }
 }
@@ -124,6 +172,8 @@ extension Manga: Identifiable {
             case .mangadex(let manga):
                 return manga.id
             case .anilist(let manga):
+                return String(manga.id)
+            case .myanimelist(let manga):
                 return String(manga.id)
         }
     }

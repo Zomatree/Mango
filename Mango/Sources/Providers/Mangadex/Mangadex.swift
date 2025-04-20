@@ -28,13 +28,13 @@ struct MangadexProvider: Provider {
     var session: Alamofire.Session = Session()
     
     func getManga(id: String) async throws -> Manga {
-        let request = session.request(URL(string: "\(MANGADEX_BASE_URL)/manga/\(id)")!, parameters: ["includes": ["cover_art"]], encoding: URLEncoding(destination: .queryString))
+        let request = session.request(URL(string: "\(MANGADEX_BASE_URL)/manga/\(id)")!, parameters: ["includes": ["cover_art", "author", "artist"]], encoding: URLEncoding(destination: .queryString))
         return .mangadex(try await request.serializingDecodable(MangadexDataResponse<MangadexManga>.self).value.data)
     }
     
     func search(filter: QueryFilterOptions) async throws -> [Manga] {
         var query: [String: any Sendable] = [
-            "includes": ["cover_art"]
+            "includes": ["cover_art", "author", "artist"]
         ]
         
         if let title = filter.title {
@@ -64,8 +64,8 @@ struct MangadexProvider: Provider {
                         statuses.append("ongoing")
                     case .cancelled:
                         statuses.append("cancelled")
-                    case .haitus:
-                        statuses.append("haitus")
+                    case .hiatus:
+                        statuses.append("hiatus")
                     case .unreleased:
                         ()
                 }
@@ -84,7 +84,7 @@ struct MangadexProvider: Provider {
     }
     
     func getChapters(manga: String, limit: Int, offset: Int) async throws -> [Chapter] {
-        let request = session.request(URL(string: "\(MANGADEX_BASE_URL)/manga/\(manga)/feed?limit=\(limit)&offset=\(offset)&translatedLanguage[]=en&includeEmptyPages=0&includeFuturePublishAt=0&includeExternalUrl=0&order[volume]=desc&order[chapter]=desc")!)
+        let request = session.request(URL(string: "\(MANGADEX_BASE_URL)/manga/\(manga)/feed?limit=\(limit)&offset=\(offset)&translatedLanguage[]=en&includeEmptyPages=0&includeFuturePublishAt=0&includeExternalUrl=0&order[volume]=desc&order[chapter]=desc&includes[]=scanlation_group")!)
         
         return try await request.serializingDecodable(MangadexMangaFeedResponse.self).value.data.map(Chapter.mangadex)
     }

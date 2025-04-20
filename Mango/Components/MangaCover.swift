@@ -9,7 +9,12 @@ import SwiftUI
 import Kingfisher
 
 struct MangaCoverImage: View {
+    enum CoverShape {
+        case original, square
+    }
     var manga: Manga
+    
+    var shape: CoverShape = .original
     
     var body: some View {
         if let icon = manga.coverArt, let iconUrl = URL(string: icon) {
@@ -18,8 +23,9 @@ struct MangaCoverImage: View {
                 .aspectRatio(contentMode: .fill)
                 .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                 .clipped()
-                .aspectRatio(1/sqrt(2), contentMode: .fit)
+                .aspectRatio(shape == .original ? 1/sqrt(2) : 1, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8))
         }
     }
 }
@@ -41,5 +47,6 @@ struct MangaCover: View {
                 .padding(.bottom, 4)
                 .multilineTextAlignment(.leading)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
